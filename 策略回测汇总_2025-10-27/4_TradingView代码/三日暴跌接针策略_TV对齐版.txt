@@ -1,0 +1,52 @@
+//@version=5
+// =============================================================================
+// | 策略名称：三日暴跌接针策略（TradingView对齐版）
+// | 版本：1.0
+// | 对齐目标：R 回测引擎 `backtest_tradingview_aligned(..., exitMode="tradingview")`
+// |
+// | 说明：
+// | - 出场使用 strategy.exit(limit/stop)：
+// |   - 触发：High/Low 盘中触发
+// |   - 成交价：精确 TP/SL 价格（更接近 TradingView 默认回测模型）
+// | - 信号窗口：highestHigh = ta.highest(high, lookbackBars)（包含当前K线）
+// |   如需改为“排除当前K线”的版本，可自行在 highestHigh 后加 [1]。
+// =============================================================================
+
+strategy("三日暴跌接针策略（TV对齐版）",
+         overlay=true,
+         process_orders_on_close=true,
+         pyramiding=0,
+         default_qty_type=strategy.percent_of_equity,
+         default_qty_value=100,
+         initial_capital=10000,
+         commission_type=strategy.commission.percent,
+         commission_value=0.075)  // 0.075% = 0.00075
+
+// === 输入参数 ===
+group_conditions = "条件设置"
+lookbackBars = input.int(3, title="回看K线数量", group=group_conditions,
+                         tooltip="注意：这是K线数量，不是天数！与R函数的lookbackDays对应")
+minDropPercent = input.float(20.0, title="最小下跌百分比(%)", group=group_conditions, minval=0)
+
+group_risk = "风险管理"
+takeProfitPercent = input.float(10.0, title="止盈百分比(%)", group=group_risk, minval=0)
+stopLossPercent = input.float(10.0, title="止损百分比(%)", group=group_risk, minval=0)
+
+// === 信号生成（对齐R函数的generate_drop_signals） ===
+highestHigh = ta.highest(high, lookbackBars)  // 包含当前K线
+percentDrop = (highestHigh - low) / highestHigh * 100
+buySignal = percentDrop >= minDropPercent
+
+notInTrade = strategy.position_size == 0
+if (buySignal and notInTrade)
+    strategy.entry("做多", strategy.long)
+
+// === 出场：strategy.exit（High/Low盘中触发 + 精确TP/SL成交价） ===
+if (strategy.position_size > 0)
+    entryPrice = strategy.position_avg_price
+    takeProfitPrice = entryPrice * (1 + takeProfitPercent / 100)
+    stopLossPrice = entryPrice * (1 - stopLossPercent / 100)
+    strategy.exit("止盈/止损", from_entry="做多",
+      limit=takeProfitPrice,
+      stop=stopLossPrice)
+

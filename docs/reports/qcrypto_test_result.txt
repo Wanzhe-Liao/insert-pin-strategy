@@ -1,0 +1,205 @@
+载入需要的程序包：usethis
+载入需要的程序包：FinancialInstrument
+载入需要的程序包：quantmod
+载入需要的程序包：xts
+载入需要的程序包：zoo
+
+载入程序包：'zoo'
+
+The following objects are masked from 'package:base':
+
+    as.Date, as.Date.numeric
+
+载入需要的程序包：TTR
+Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo 
+载入需要的程序包：PerformanceAnalytics
+
+载入程序包：'PerformanceAnalytics'
+
+The following object is masked from 'package:graphics':
+
+    legend
+
+载入需要的程序包：blotter
+载入需要的程序包：quantstrat
+载入需要的程序包：foreach
+载入需要的程序包：tidyverse
+── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.5
+✔ forcats   1.0.1     ✔ stringr   1.5.2
+✔ ggplot2   4.0.0     ✔ tibble    3.2.1
+✔ lubridate 1.9.4     ✔ tidyr     1.3.1
+✔ purrr     1.0.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ purrr::accumulate() masks foreach::accumulate()
+✖ dplyr::filter()     masks stats::filter()
+✖ dplyr::first()      masks xts::first()
+✖ dplyr::lag()        masks stats::lag()
+✖ dplyr::last()       masks xts::last()
+✖ tidyr::spread()     masks FinancialInstrument::spread()
+✖ purrr::when()       masks foreach::when()
+ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+载入需要的程序包：cli
+载入需要的程序包：binancer
+载入需要的程序包：parallel
+载入需要的程序包：pbapply
+载入需要的程序包：data.table
+
+载入程序包：'data.table'
+
+The following objects are masked from 'package:lubridate':
+
+    hour, isoweek, mday, minute, month, quarter, second, wday, week,
+    yday, year
+
+The following objects are masked from 'package:dplyr':
+
+    between, first, last
+
+The following object is masked from 'package:purrr':
+
+    transpose
+
+The following objects are masked from 'package:xts':
+
+    first, last
+
+The following objects are masked from 'package:zoo':
+
+    yearmon, yearqtr
+
+载入需要的程序包：httr
+载入需要的程序包：digest
+载入需要的程序包：snakecase
+载入需要的程序包：jsonlite
+
+载入程序包：'jsonlite'
+
+The following object is masked from 'package:purrr':
+
+    flatten
+
+载入需要的程序包：processx
+载入需要的程序包：fs
+载入需要的程序包：Rcpp
+ℹ Welcome to Quant Crypto🪙!
+
+Version 2.5 GPU-accelerated XTrend is online!! 🌋🌋🌋
+
+ version: 2.5.8 Stable
+
+ Power by: Oppen Chow
+
+This version Including Strategy:
+  💰 AlphaTrend @ KivancOzbilgic
+  💰 XTrend 1.0 @ Oppen Chow (GPU acceleration⏫)
+
+
+  Enjoy the fun of quantitative trading!🚀🚀🚀
+
+
+
+✔ Using `QCrypto::example_GPU_initial` to explore GPU acceleration!
+✔ Using `QCrypto::example_xx` to explore the demo!
+
+载入程序包：'QCrypto'
+
+The following objects are masked from 'package:binancer':
+
+    binance_credentials, binance_exchange_info, binance_filters,
+    binance_new_order
+
+共有13个警告 (用warnings()来显示)
+=== QCrypto::backtest 函数分析 ===
+
+函数签名:
+backtest(open, buy_signal, sell_signal, initial_capital, fee = 0.001)
+
+参数说明:
+- open: 开盘价向量 (或收盘价，用于计算收益)
+- buy_signal: 买入信号向量 (1=买入, 0=不操作)
+- sell_signal: 卖出信号向量 (1=卖出, 0=不操作)
+- initial_capital: 初始资金
+- fee: 交易费率 (默认0.001 = 0.1%)
+
+核心特点:
+1. 满仓/清仓策略: 买入时投入全部资金，卖出时全部平仓
+2. 信号逻辑: buy_signal=1时开仓，sell_signal=1时平仓
+3. 底层C++实现: backtest_cpp，性能优化
+4. 与TradingView一致的逻辑
+
+=== 实现连续3根下跌20%策略 ===
+
+参数设置:
+- 回溯期: 3根K线
+- 下跌阈值: 20.0%
+- 止盈: 10.0%
+- 止损: 10.0%
+- 初始资金: $100
+- 手续费: 0.10%
+
+数据: 86713根K线
+时间范围: 2023-05-06 02:14 至 2025-10-25 08:14
+
+=== 策略1: 简单版 (无止盈止损) ===
+
+检测到 2 个买入信号
+检测到 2 个卖出信号
+
+backtest返回的列名:
+[1] "open"              "buy_signal"        "sell_signal"      
+[4] "returns"           "capital"           "return_percentage"
+
+前10行结果:
+       open buy_signal sell_signal returns capital return_percentage
+1  3.30e-06          0           0       0     100                 0
+2  3.43e-06          0           0       0     100                 0
+3  3.07e-06          0           0       0     100                 0
+4  3.07e-06          0           0       0     100                 0
+5  3.08e-06          0           0       0     100                 0
+6  3.14e-06          0           0       0     100                 0
+7  3.42e-06          0           0       0     100                 0
+8  3.35e-06          0           0       0     100                 0
+9  3.35e-06          0           0       0     100                 0
+10 3.30e-06          0           0       0     100                 0
+
+交易记录 (3笔):
+      open buy_signal sell_signal  returns  capital return_percentage
+1 4.95e-06          1           0  0.00000  99.9000          -0.10000
+2 6.35e-06          1           1 28.28283 127.9266          27.92659
+3 6.84e-06          0           1  0.00000 127.9266          27.92659
+
+最终结果:
+          open buy_signal sell_signal  returns  capital return_percentage
+86713 7.14e-06          0           0 15.93121 143.7139          43.71394
+
+
+=== 策略2: 完整版 (含止盈止损) ===
+
+检测到 1 个买入信号
+检测到 1 个卖出信号
+
+交易记录 (2笔):
+                 time     open    close buy_signal sell_signal      drop
+1 2025-10-11 05:29:59 7.26e-06 4.95e-06          1           0 0.4257541
+2 2025-10-11 05:44:59 4.95e-06 6.35e-06          0           1 0.2179803
+
+买入时间:
+[1] "2025-10-11 05:29:59 CST"
+
+卖出时间:
+[1] "2025-10-11 05:44:59 CST"
+
+最终结果:
+          open buy_signal sell_signal  returns  capital return_percentage
+86713 7.14e-06          0           0 15.93121 143.7139          43.71394
+
+
+=== 保存结果 ===
+
+已保存信号数据到: qcrypto_backtest_signals.csv
+已保存回测结果到: qcrypto_backtest_result.csv
+
+测试完成！

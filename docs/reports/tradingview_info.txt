@@ -1,0 +1,55 @@
+TradingView Results Analysis
+================================================================================ 
+
+Shape: 9 rows x 7 columns
+
+Column names:
+  1: ...1
+  2: 全部 USDT
+  3: 全部 %
+  4: 做多 USDT
+  5: 做多 %
+  6: 做空 USDT
+  7: 做空 %
+
+Data structure:
+tibble [9 × 7] (S3: tbl_df/tbl/data.frame)
+ $ ...1     : chr [1:9] "打开P&L" "净利润" "毛利润" "毛亏损" ...
+ $ 全部 USDT: num [1:9] 0 175.99 175.99 0 2.23 ...
+ $ 全部 %   : num [1:9] 0 176 176 0 NA ...
+ $ 做多 USDT: num [1:9] NA 175.99 175.99 0 2.23 ...
+ $ 做多 %   : num [1:9] NA 176 176 0 NA ...
+ $ 做空 USDT: num [1:9] NA 0 0 0 0 NA NA NA 0
+ $ 做空 %   : num [1:9] NA 0 0 0 NA NA NA NA NA
+
+First 20 rows:
+# A tibble: 9 × 7
+  ...1            `全部 USDT` `全部 %` `做多 USDT` `做多 %` `做空 USDT` `做空 %`
+  <chr>                 <dbl>    <dbl>       <dbl>    <dbl>       <dbl>    <dbl>
+1 打开P&L                0         0       NA           NA           NA       NA
+2 净利润               176.      176.       1.76e2     176.           0        0
+3 毛利润               176.      176.       1.76e2     176.           0        0
+4 毛亏损                 0         0        0            0            0        0
+5 已支付佣金             2.23     NA        2.23e0      NA            0       NA
+6 买入和持有回报       137.      137.      NA           NA           NA       NA
+7 最大股权上涨         176.       63.8     NA           NA           NA       NA
+8 最大股权回撤          35.0      14.0     NA           NA           NA       NA
+9 最大合同持有量 116207813        NA        1.16e8      NA            0       NA
+
+Summary statistics:
+     ...1             全部 USDT             全部 %          做多 USDT        
+ Length:9           Min.   :        0   Min.   :  0.000   Min.   :        0  
+ Class :character   1st Qu.:        2   1st Qu.:  6.975   1st Qu.:        2  
+ Mode  :character   Median :      137   Median : 63.790   Median :      176  
+                    Mean   : 12912057   Mean   : 80.933   Mean   : 23241633  
+                    3rd Qu.:      176   3rd Qu.:156.400   3rd Qu.:      176  
+                    Max.   :116207813   Max.   :175.990   Max.   :116207813  
+                                        NA's   :2         NA's   :4          
+     做多 %        做空 USDT     做空 % 
+ Min.   :  0.0   Min.   :0   Min.   :0  
+ 1st Qu.: 88.0   1st Qu.:0   1st Qu.:0  
+ Median :176.0   Median :0   Median :0  
+ Mean   :117.3   Mean   :0   Mean   :0  
+ 3rd Qu.:176.0   3rd Qu.:0   3rd Qu.:0  
+ Max.   :176.0   Max.   :0   Max.   :0  
+ NA's   :6       NA's   :4   NA's   :6  

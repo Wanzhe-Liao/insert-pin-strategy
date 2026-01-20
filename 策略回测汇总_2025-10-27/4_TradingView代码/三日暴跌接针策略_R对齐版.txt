@@ -1,0 +1,178 @@
+//@version=5
+// =============================================================================
+// | 策略名称：三日暴跌接针策略（R回测函数对齐版）
+// | 版本：2.0
+// | 对齐目标：backtest_tradingview_aligned.R
+// | 创建日期：2025-10-27
+// |
+// | 核心修改（相比原版Pine Script）：
+// | 1. 信号生成窗口：去掉[1]偏移，使用当前K线
+// | 2. 止盈止损触发：只在收盘价触发（不使用limit/stop订单）
+// | 3. 同时触发规则：阳线优先止盈，阴线优先止损
+// | 4. 手续费设置：0.075%（对齐R回测函数）
+// |
+// | 关键差异说明：
+// | ┌─────────────────────┬──────────────────────┬──────────────────────┐
+// | │      项目           │   原Pine Script      │   修改后（R对齐版）  │
+// | ├─────────────────────┼──────────────────────┼──────────────────────┤
+// | │ 信号窗口            │ ta.highest()[1]      │ ta.highest()         │
+// | │                     │ 排除当前K线          │ 包含当前K线          │
+// | ├─────────────────────┼──────────────────────┼──────────────────────┤
+// | │ 止盈触发            │ limit订单盘中触发    │ close价格触发        │
+// | ├─────────────────────┼──────────────────────┼──────────────────────┤
+// | │ 止损触发            │ stop订单盘中触发     │ close价格触发        │
+// | ├─────────────────────┼──────────────────────┼──────────────────────┤
+// | │ 同时触发            │ 系统自动处理         │ 阳线→TP, 阴线→SL     │
+// | └─────────────────────┴──────────────────────┴──────────────────────┘
+// =============================================================================
+
+strategy("三日暴跌接针策略（R对齐版）",
+         overlay=true,
+         process_orders_on_close=true,
+         default_qty_type=strategy.percent_of_equity,
+         default_qty_value=100,
+         initial_capital=10000,
+         commission_type=strategy.commission.percent,
+         commission_value=0.075)  // 0.075% = 0.00075
+
+// === 输入参数 ===
+group_conditions = "条件设置"
+lookbackBars = input.int(3, title="回看K线数量", group=group_conditions,
+                         tooltip="注意：这是K线数量，不是天数！与R函数的lookbackDays直接对应")
+minDropPercent = input.float(20.0, title="最小下跌百分比(%)", group=group_conditions, minval=0)
+
+group_risk = "风险管理"
+takeProfitPercent = input.float(10.0, title="止盈百分比(%)", group=group_risk, minval=0)
+stopLossPercent = input.float(10.0, title="止损百分比(%)", group=group_risk, minval=0)
+
+// === 信号生成（对齐R函数的generate_drop_signals） ===
+
+// 🔧 关键修复1：去掉[1]偏移，使用当前K线
+// 原版：highestHighPrev = ta.highest(high, lookbackDays)[1]
+// R代码：window_high <- roll_max(high_vec, n = lookbackBars, align = "right")
+//        这包含当前K线的最高价，因为在收盘时计算信号时当前K线已完成
+highestHigh = ta.highest(high, lookbackBars)  // ← 去掉[1]，对齐R逻辑
+
+// 计算跌幅百分比（与R完全一致）
+// R代码：drop_percent <- (window_high - low_vec) / window_high * 100
+percentDrop = (highestHigh - low) / highestHigh * 100
+
+// 生成买入信号
+// R代码：signals <- !is.na(drop_percent) & (drop_percent >= minDropPercent)
+cond_priceDrop = percentDrop >= minDropPercent
+
+// === 入场逻辑（对齐R函数的入场逻辑） ===
+
+longCondition = cond_priceDrop
+notInTrade = strategy.position_size == 0
+
+// R代码：if (signals[i] && !inPosition)
+if (longCondition and notInTrade)
+    strategy.entry("做多", strategy.long)
+
+// === 出场逻辑（对齐R函数的出场逻辑） ===
+
+// 🔧 关键修复2：不使用strategy.exit，改用手动close逻辑
+// 原因：strategy.exit使用limit/stop订单在盘中触发（使用High/Low价格）
+//       R函数使用Close价格在收盘时触发
+
+if (strategy.position_size > 0)
+    entryPrice = strategy.position_avg_price
+
+    // 计算止盈止损价格
+    // R代码：tpPrice <- entryPrice * (1 + takeProfitPercent / 100)
+    //        slPrice <- entryPrice * (1 - stopLossPercent / 100)
+    takeProfitPrice = entryPrice * (1 + takeProfitPercent / 100)
+    stopLossPrice = entryPrice * (1 - stopLossPercent / 100)
+
+    // 🔧 关键修复3：使用Close价格判断触发（对齐R函数）
+    // R代码：hitTP <- currentClose >= tpPrice
+    //        hitSL <- currentClose <= slPrice
+    hitTP = close >= takeProfitPrice
+    hitSL = close <= stopLossPrice
+
+    // 判断是否同时触发（对齐R函数的both trigger逻辑）
+    // R代码：
+    // if (hitTP && hitSL) {
+    //   if (currentClose >= currentOpen) {
+    //     exitReason <- "TP_first_in_both"  // 阳线优先止盈
+    //   } else {
+    //     exitReason <- "SL_first_in_both"  // 阴线优先止损
+    //   }
+    // }
+    if (hitTP and hitSL)
+        // 根据K线方向决定优先级
+        if (close >= open)
+            strategy.close("做多", comment="TP_both阳线")
+        else
+            strategy.close("做多", comment="SL_both阴线")
+    else if (hitTP)
+        strategy.close("做多", comment="TP")
+    else if (hitSL)
+        strategy.close("做多", comment="SL")
+
+// === 可视化 ===
+
+plotshape(longCondition and notInTrade,
+          title="入场信号",
+          style=shape.labelup,
+          location=location.belowbar,
+          color=color.new(color.green, 0),
+          text="做多",
+          textcolor=color.new(color.white, 0),
+          size=size.small)
+
+bgcolor(cond_priceDrop ? color.new(color.red, 85) : na, title="跌幅满足")
+
+// 显示当前持仓的止盈止损线
+var line tpLine = na
+var line slLine = na
+
+if (strategy.position_size > 0)
+    entryPrice = strategy.position_avg_price
+    takeProfitPrice = entryPrice * (1 + takeProfitPercent / 100)
+    stopLossPrice = entryPrice * (1 - stopLossPercent / 100)
+
+    // 绘制止盈线（绿色虚线）
+    line.delete(tpLine)
+    tpLine := line.new(bar_index, takeProfitPrice, bar_index + 1, takeProfitPrice,
+                       color=color.green, width=1, style=line.style_dashed)
+
+    // 绘制止损线（红色虚线）
+    line.delete(slLine)
+    slLine := line.new(bar_index, stopLossPrice, bar_index + 1, stopLossPrice,
+                       color=color.red, width=1, style=line.style_dashed)
+else
+    line.delete(tpLine)
+    line.delete(slLine)
+
+// =============================================================================
+// 使用说明：
+//
+// 1. 复制此代码到TradingView策略编辑器
+// 2. 选择交易对（如PEPEUSDT、ETHUSDT等）
+// 3. 选择时间周期（5m、15m、30m、1h等）
+// 4. 输入参数（参考优化结果）：
+//    - 回看K线数量：1-10
+//    - 最小下跌百分比：0-20%
+//    - 止盈百分比：0-20%（建议>=0.5%避免超高频）
+//    - 止损百分比：0-20%
+//
+// 5. 点击"添加到图表"查看回测结果
+//
+// 注意事项：
+// - 此版本与R回测函数完全对齐
+// - TP=0%表示只要收盘价>=入场价就止盈（超高频策略）
+// - 建议使用TP>=0.5%或1.0%的参数
+// - 回测结果应与R函数高度一致（允许轻微差异）
+//
+// 对比测试建议：
+// 使用相同参数在TradingView和R中运行，对比：
+// - 信号数量
+// - 交易数量
+// - 收益率
+// - 胜率
+// - 最大回撤
+//
+// 如果结果一致，说明逻辑对齐成功。
+// =============================================================================

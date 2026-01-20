@@ -1,0 +1,368 @@
+警告信息:
+程序包'readxl'是用R版本4.4.3 来建造的 
+
+载入程序包：'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+
+载入程序包：'lubridate'
+
+The following objects are masked from 'package:base':
+
+    date, intersect, setdiff, union
+
+警告信息:
+程序包'lubridate'是用R版本4.4.3 来建造的 
+
+==================================================================================================== 
+                        TRADINGVIEW vs R BACKTEST COMPARISON ANALYSIS
+==================================================================================================== 
+
+PART 1: Loading TradingView Results
+---------------------------------------------------------------------------------------------------- 
+
+New names:
+• `` -> `...1`
+TradingView Performance Metrics:
+# A tibble: 9 × 7
+  ...1            `全部 USDT` `全部 %` `做多 USDT` `做多 %` `做空 USDT` `做空 %`
+  <chr>                 <dbl>    <dbl>       <dbl>    <dbl>       <dbl>    <dbl>
+1 打开P&L                0         0       NA           NA           NA       NA
+2 净利润               176.      176.       1.76e2     176.           0        0
+3 毛利润               176.      176.       1.76e2     176.           0        0
+4 毛亏损                 0         0        0            0            0        0
+5 已支付佣金             2.23     NA        2.23e0      NA            0       NA
+6 买入和持有回报       137.      137.      NA           NA           NA       NA
+7 最大股权上涨         176.       63.8     NA           NA           NA       NA
+8 最大股权回撤          35.0      14.0     NA           NA           NA       NA
+9 最大合同持有量 116207813        NA        1.16e8      NA            0       NA
+New names:
+• `` -> `...1`
+
+TradingView Trade Analysis:
+# A tibble: 16 × 7
+   ...1           `全部 USDT` `全部 %` `做多 USDT` `做多 %` `做空 USDT` `做空 %`
+   <chr>                <dbl>    <dbl>       <dbl>    <dbl>       <dbl> <lgl>   
+ 1 总交易                 9       NA           9       NA             0 NA      
+ 2 总未平仓交易           0       NA           0       NA             0 NA      
+ 3 盈利交易               9       NA           9       NA             0 NA      
+ 4 亏损交易               0       NA           0       NA             0 NA      
+ 5 获利百分比            NA      100          NA      100            NA NA      
+ 6 平均P&L               19.6     12.1        19.6     12.1          NA NA      
+ 7 平均盈利交易          19.6     12.1        19.6     12.1          NA NA      
+ 8 平均亏损交易          NA       NA          NA       NA            NA NA      
+ 9 平均盈利/平均亏损……        NA       NA          NA       NA            NA NA      
+10 最大盈利交易          55.1     NA          55.1     NA            NA NA      
+11 最大盈利交易百分比……        NA       28.1        NA       28.1          NA NA      
+12 最大亏损交易          NA       NA          NA       NA            NA NA      
+13 最大亏损交易百分比……        NA       NA          NA       NA            NA NA      
+14 交易的平均K线数……        39       NA          39       NA             0 NA      
+15 盈利交易的平均K线数……        39       NA          39       NA             0 NA      
+16 亏损交易的平均K线数……         0       NA           0       NA             0 NA      
+
+TradingView Trade List:
+  Total rows: 18 
+  Columns: 交易 #, 类型, 日期/时间, 信号, 价格 USDT, 仓位大小（数量）, 仓位大小（价值）, 净损益 USDT, 净损益 %, 最大交易获利 USDT, 最大交易获利 %, 交易亏损 USDT, 交易亏损 %, 累计P&L USDT, 累计P&L % 
+
+TradingView Properties:
+# A tibble: 25 × 2
+   name         value                                       
+   <chr>        <chr>                                       
+ 1 交易范围     2023年5月06日, 02:45 — 2025年10月27日, 01:45
+ 2 回测范围     2023年5月06日, 02:00 — 2025年10月27日, 01:45
+ 3 商品代码     BINANCE:PEPEUSDT                            
+ 4 时间周期     15 分钟                                     
+ 5 点值         1                                           
+ 6 图表类型     K线图                                       
+ 7 货币         USDT                                        
+ 8 Tick大小     0.00000001                                  
+ 9 精确度       系统预设                                    
+10 下跌回看天数 3                                           
+# ℹ 15 more rows
+
+
+PART 2: Loading R Backtest Results
+---------------------------------------------------------------------------------------------------- 
+
+R Backtest Trade List:
+  Total rows: 127 
+  Columns: Trade_No, Signal_Time, Signal_Price, Entry_Time, Entry_Price, Exit_Time, Exit_Price, PnL_Percent, Exit_Type, Holding_Bars 
+
+R Backtest Metrics:
+  total_trades: 127.00
+  winning_trades: 74.00
+  losing_trades: 53.00
+  win_rate: 58.27
+  avg_pnl_pct: 1.80
+  max_win: 22.37
+  max_loss: -31.72
+
+
+PART 3: Extracting TradingView Key Metrics
+---------------------------------------------------------------------------------------------------- 
+
+TradingView Key Metrics Summary:
+  Net Profit: 175.99 USDT (175.99%)
+  Total Trades: 9
+  Winning Trades: 9
+  Losing Trades: 0
+  Win Rate: 100.00%
+  Avg PnL: 19.55 USDT (12.07%)
+  Max Drawdown: 35.03 USDT (13.95%)
+  Total Fees: 2.23 USDT
+
+
+PART 4: Side-by-Side Metrics Comparison
+==================================================================================================== 
+
+                 Metric TradingView               R_Backtest
+1     Net Profit (USDT)      175.99 N/A (need final capital)
+2        Net Profit (%)      175.99                   318.56
+3          Total Trades           9                      127
+4        Winning Trades           9                       74
+5         Losing Trades           0                       53
+6          Win Rate (%)      100.00                    58.27
+7 Avg PnL per Trade (%)       12.07                     1.80
+8      Max Drawdown (%)       13.95                    56.95
+9     Total Fees (USDT)        2.23                  7279.81
+
+
+KEY DIFFERENCES:
+  Trade Count: TradingView has 9 trades, R has 127 trades (difference: 118)
+  Win Rate: TradingView 100.00%, R 58.27% (difference: -41.73%)
+  Return: TradingView 175.99%, R 318.56% (difference: -142.57%)
+
+
+PART 5: Trade-by-Trade Comparison (First 20 Trades)
+==================================================================================================== 
+
+TradingView - First 10 Completed Trades:
+
+Trade #1:
+  Entry: 2023-05-06 02:44:59 @ 0.0000030700 USDT
+  Exit:  2023-05-06 03:29:59 @ 0.0000033800 USDT
+  PnL: 9.93 USDT (9.93%), Reason: 止盈/止损
+
+Trade #2:
+  Entry: 2023-08-18 05:30:00 @ 0.0000009500 USDT
+  Exit:  2023-08-18 06:00:00 @ 0.0000010500 USDT
+  PnL: 11.39 USDT (10.36%), Reason: 止盈/止损
+
+Trade #3:
+  Entry: 2023-11-10 00:00:00 @ 0.0000012500 USDT
+  Exit:  2023-11-11 07:59:59 @ 0.0000013800 USDT
+  PnL: 12.42 USDT (10.23%), Reason: 止盈/止损
+
+Trade #4:
+  Entry: 2024-01-03 19:59:59 @ 0.0000011500 USDT
+  Exit:  2024-01-04 00:15:00 @ 0.0000012700 USDT
+  PnL: 13.73 USDT (10.27%), Reason: 止盈/止损
+
+Trade #5:
+  Entry: 2024-03-06 03:45:00 @ 0.0000055200 USDT
+  Exit:  2024-03-06 04:59:59 @ 0.0000060800 USDT
+  PnL: 14.72 USDT (9.98%), Reason: 止盈/止损
+
+Trade #6:
+  Entry: 2024-04-13 02:30:00 @ 0.0000054300 USDT
+  Exit:  2024-04-13 03:29:59 @ 0.0000059800 USDT
+  PnL: 16.16 USDT (9.96%), Reason: 止盈/止损
+
+Trade #7:
+  Entry: 2024-04-14 04:00:00 @ 0.0000043700 USDT
+  Exit:  2024-04-14 05:44:59 @ 0.0000048100 USDT
+  PnL: 17.66 USDT (9.90%), Reason: 止盈/止损
+
+Trade #8:
+  Entry: 2025-10-11 05:15:00 @ 0.0000049500 USDT
+  Exit:  2025-10-11 05:30:00 @ 0.0000063500 USDT
+  PnL: 55.06 USDT (28.09%), Reason: 止盈/止损
+
+Trade #9:
+  Entry: 2025-10-11 05:44:59 @ 0.0000068400 USDT
+  Exit:  2025-10-13 02:15:00 @ 0.0000075300 USDT
+  PnL: 24.91 USDT (9.92%), Reason: 止盈/止损
+
+
+R Backtest - First 10 Trades:
+
+Trade #1:
+  Entry: 2023-05-09 02:14:59 @ 0.0000016500 USDT
+  Exit:  2023-05-09 03:29:59 @ 0.0000018300 USDT
+  PnL: 10.91%, Reason: TP, Holding: 5 bars
+
+Trade #2:
+  Entry: 2023-05-09 03:44:59 @ 0.0000017700 USDT
+  Exit:  2023-05-09 05:44:59 @ 0.0000020200 USDT
+  PnL: 14.12%, Reason: TP, Holding: 8 bars
+
+Trade #3:
+  Entry: 2023-05-09 05:59:59 @ 0.0000020200 USDT
+  Exit:  2023-05-09 08:59:59 @ 0.0000018100 USDT
+  PnL: -10.40%, Reason: SL, Holding: 12 bars
+
+Trade #4:
+  Entry: 2023-05-09 09:14:59 @ 0.0000018300 USDT
+  Exit:  2023-05-09 15:59:59 @ 0.0000020400 USDT
+  PnL: 11.48%, Reason: TP, Holding: 27 bars
+
+Trade #5:
+  Entry: 2023-05-09 16:14:59 @ 0.0000020400 USDT
+  Exit:  2023-05-10 00:14:59 @ 0.0000018200 USDT
+  PnL: -10.78%, Reason: SL, Holding: 32 bars
+
+Trade #6:
+  Entry: 2023-05-10 00:29:59 @ 0.0000018300 USDT
+  Exit:  2023-05-10 07:14:59 @ 0.0000020200 USDT
+  PnL: 10.38%, Reason: TP, Holding: 27 bars
+
+Trade #7:
+  Entry: 2023-05-10 07:29:59 @ 0.0000020400 USDT
+  Exit:  2023-05-11 01:14:59 @ 0.0000018100 USDT
+  PnL: -11.27%, Reason: SL, Holding: 71 bars
+
+Trade #8:
+  Entry: 2023-05-11 01:29:59 @ 0.0000017700 USDT
+  Exit:  2023-05-11 06:59:59 @ 0.0000019500 USDT
+  PnL: 10.17%, Reason: TP, Holding: 22 bars
+
+Trade #9:
+  Entry: 2023-05-11 07:14:59 @ 0.0000019400 USDT
+  Exit:  2023-05-11 14:29:59 @ 0.0000017400 USDT
+  PnL: -10.31%, Reason: SL, Holding: 29 bars
+
+Trade #10:
+  Entry: 2023-05-11 14:44:59 @ 0.0000016700 USDT
+  Exit:  2023-05-12 01:29:59 @ 0.0000014700 USDT
+  PnL: -11.98%, Reason: SL, Holding: 43 bars
+
+
+
+PART 6: Analysis of Differences
+==================================================================================================== 
+
+IDENTIFIED DISCREPANCIES:
+
+1. TRADE COUNT DIFFERENCE:
+   - TradingView: 9 trades
+   - R Backtest: 127 trades
+   - Difference: 118 trades (14.1x)
+   - Possible Reasons:
+     * Different signal generation logic
+     * Different signal filtering
+     * Different handling of consecutive signals
+
+2. WIN RATE DIFFERENCE:
+   - TradingView: 100.00% (9 wins / 0 losses)
+   - R Backtest: 58.27% (74 wins / 53 losses)
+   - Difference: -41.73%
+   - Possible Reasons:
+     * Different stop loss/take profit trigger logic
+     * Different price used for exit (close vs intrabar)
+
+3. RETURN DIFFERENCE:
+   - TradingView: 175.99%
+   - R Backtest: 318.56%
+   - Difference: 142.57%
+   - Possible Reasons:
+     * Different compounding methodology
+     * Different position sizing
+     * More trades = more compound growth
+
+4. FIRST TRADE COMPARISON:
+
+   TradingView First Trade:
+     Entry: 2023-05-06 02:44:59 @ 0.0000030700 USDT
+     Exit:  2023-05-06 03:29:59 @ 0.0000033800 USDT
+     PnL: 9.93%
+
+   R Backtest First Trade:
+     Entry: 2023-05-09 02:14:59 @ 0.0000016500 USDT
+     Exit:  2023-05-09 03:29:59 @ 0.0000018300 USDT
+     PnL: 10.91%
+
+   Comparison:
+     Entry Time Difference: 4290 minutes
+     Entry Price Difference: 86.0606%
+     ✗ First trades are DIFFERENT - fundamental logic mismatch
+
+
+
+PART 7: Summary and Recommendations
+==================================================================================================== 
+
+SUMMARY OF FINDINGS:
+
+1. Major Discrepancy in Trade Count:
+   - R generates 14.1x more trades than TradingView
+   - This is the PRIMARY source of difference
+
+2. Different Win Rate:
+   - TradingView: 100.00% (all wins!)
+   - R Backtest: 58.27%
+   - TradingView shows 100% win rate, which is suspicious
+
+3. Vastly Different Returns:
+   - TradingView: 175.99%
+   - R Backtest: 318.56%
+   - Difference is driven by both trade count and compounding
+
+ROOT CAUSE HYPOTHESES (ranked by likelihood):
+
+1. ★★★★★ Signal Generation Timing:
+   - TradingView may use 'close' of signal bar for entry
+   - R may use 'open' of next bar after signal
+   - This could cause many signals to be filtered out in TV
+
+2. ★★★★☆ Position Management:
+   - TradingView may not allow overlapping positions
+   - R may allow multiple concurrent positions
+   - Or one system filters signals during open positions
+
+3. ★★★☆☆ Stop Loss/Take Profit Logic:
+   - TradingView uses intrabar execution (actual high/low)
+   - R may only check at bar close
+   - This affects exit timing and prices
+
+4. ★★☆☆☆ Fee Calculation:
+   - Different fee application methods
+   - TradingView fees: 2.23 USDT
+   - R Backtest fees: 7279.81 USDT
+   - Huge difference suggests different position sizing
+
+RECOMMENDATIONS:
+
+1. IMMEDIATE ACTIONS:
+   a) Review signal generation logic in both systems
+   b) Check if R allows multiple concurrent positions
+   c) Verify stop loss/take profit trigger mechanism
+   d) Compare position sizing formulas
+
+2. DEBUGGING STEPS:
+   a) Create a signal log from TradingView (all generated signals)
+   b) Create a signal log from R (all generated signals)
+   c) Compare signal counts and timing
+   d) Identify where signals diverge
+
+3. CODE REVIEW PRIORITIES:
+   a) Entry timing: bar close vs next bar open
+   b) Position management: single vs multiple positions
+   c) Exit logic: intrabar vs bar close
+   d) Fee application: per-trade vs position-based
+
+
+Results saved to:
+  - tv_vs_r_comparison.csv
+  - tv_trades_processed.csv
+
+==================================================================================================== 
+                                      ANALYSIS COMPLETE
+==================================================================================================== 
+
