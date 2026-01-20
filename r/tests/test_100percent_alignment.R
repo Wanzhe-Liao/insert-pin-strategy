@@ -35,7 +35,8 @@ result <- backtest_tradingview_aligned(
   feeRate = 0.00075,
   processOnClose = TRUE,
   verbose = TRUE,
-  logIgnoredSignals = TRUE
+  logIgnoredSignals = TRUE,
+  exitMode = "tradingview"
 )
 
 # 提取交易数据

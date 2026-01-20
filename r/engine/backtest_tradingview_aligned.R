@@ -323,6 +323,20 @@ backtest_tradingview_aligned <- function(data,
   # ========== 逐K线模拟交易 ==========
   for (i in 1:n) {
 
+    # TradingView / Pine Script: process_orders_on_close=true ʱ��
+    # entry �����ж�ʹ�õ��� "bar ��ʼ" ��ʱ��ĳֲ�״̬��
+    # ��ʹͬһ��K�����ȳ������볡��Pine �ڵ�ǰ bar ��Ҳ�������
+    # �因此�� i �� bar ��ʼ�ڳֲ�״̬ʱ����¼ signals[i] Ϊ "ignored"��
+    wasInPosition <- inPosition
+    if (isTRUE(wasInPosition) && isTRUE(signals[i]) && isTRUE(logIgnoredSignals)) {
+      ignoredCount <- ignoredCount + 1
+      ignoredSignals[[ignoredCount]] <- list(
+        Bar = i,
+        Timestamp = as.character(timestamps[i]),
+        Reason = "�ڳֲ�״̬�£��źű����ԣ�TradingView ����һ��ֻһ���ֲ�"
+      )
+    }
+
     # ========================================
     # 阶段1: 检查出场条件（优先处理）
     # ========================================
@@ -456,7 +470,8 @@ backtest_tradingview_aligned <- function(data,
     # ========================================
     # 阶段2: 检查入场信号
     # ========================================
-    if (signals[i] && !inPosition) {
+    if (signals[i] && !inPosition && i != lastExitBar) {
+      entryLogAlready <- FALSE
       # FIX 关键修复：允许同一K线检测到信号（即使刚出场）
       # 但如果同一K线刚出场，延迟到下一根K线入场
       # 这样对齐TradingView的行为：在检测信号的下一根K线收盘时入场
@@ -498,13 +513,15 @@ backtest_tradingview_aligned <- function(data,
               Reason = "最后一根K线，无法下一根开盘入场"
             )
           }
-          next
+          entryLogAlready <- TRUE
+          entryPrice <- NA_real_
+          entryBar <- i
         }
       }
 
       # 验证入场价格有效性
       if (is.na(entryPrice) || entryPrice <= 0) {
-        if (logIgnoredSignals) {
+        if (isTRUE(logIgnoredSignals) && !isTRUE(entryLogAlready)) {
           ignoredCount <- ignoredCount + 1
           ignoredSignals[[ignoredCount]] <- list(
             Bar = i,
@@ -512,23 +529,22 @@ backtest_tradingview_aligned <- function(data,
             Reason = sprintf("入场价格无效: %.8f", entryPrice)
           )
         }
-        next
-      }
+      } else {
+        # 计算手续费
+        entryFee <- capital * feeRate
+        entryCapital <- capital - entryFee
 
-      # 计算手续费
-      entryFee <- capital * feeRate
-      entryCapital <- capital - entryFee
+        # 入场
+        position <- entryCapital / entryPrice
+        capital <- 0
+        inPosition <- TRUE
+        totalFees <- totalFees + entryFee
 
-      # 入场
-      position <- entryCapital / entryPrice
-      capital <- 0
-      inPosition <- TRUE
-      totalFees <- totalFees + entryFee
-
-      if (verbose) {
-        cat(sprintf("[入场] Bar=%d, 时间=%s, 价格=%.8f, 数量=%.2f, 手续费=%.4f\n",
-                    entryBar, as.character(timestamps[entryBar]),
-                    entryPrice, position, entryFee))
+        if (verbose) {
+          cat(sprintf("[入场] Bar=%d, 时间=%s, 价格=%.8f, 数量=%.2f, 手续费=%.4f\n",
+                      entryBar, as.character(timestamps[entryBar]),
+                      entryPrice, position, entryFee))
+        }
       }
 
     }
