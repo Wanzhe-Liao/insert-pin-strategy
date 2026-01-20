@@ -65,6 +65,37 @@ days_to_bars <- function(days, tf_minutes) {
   return(as.integer(days * bars_per_day))
 }
 
+# --- Volatility helpers (used by normalized signal modes) --------------------
+calc_true_range <- function(high_vec, low_vec, close_vec) {
+  stopifnot(length(high_vec) == length(low_vec), length(low_vec) == length(close_vec))
+
+  prev_close <- c(close_vec[1], close_vec[-length(close_vec)])
+  pmax(
+    high_vec - low_vec,
+    abs(high_vec - prev_close),
+    abs(low_vec - prev_close),
+    na.rm = TRUE
+  )
+}
+
+calc_atr_wilder <- function(tr_vec, atrLength) {
+  atrLength <- as.integer(atrLength)
+  if (atrLength < 1) stop("atrLength must be >= 1")
+
+  n <- length(tr_vec)
+  if (n < atrLength) return(rep(NA_real_, n))
+
+  atr <- rep(NA_real_, n)
+  atr[atrLength] <- mean(tr_vec[1:atrLength], na.rm = TRUE)
+  if (atrLength + 1 <= n) {
+    for (i in (atrLength + 1):n) {
+      atr[i] <- (atr[i - 1] * (atrLength - 1) + tr_vec[i]) / atrLength
+    }
+  }
+
+  atr
+}
+
 # ============================================================================
 # 信号生成函数（对齐TradingView的ta.highest()）
 # ============================================================================
@@ -94,7 +125,13 @@ days_to_bars <- function(days, tf_minutes) {
 #' @param minDropPercent 最小跌幅百分比
 #' @param includeCurrentBar 是否包含当前K线（默认TRUE）
 #' @return 逻辑向量，TRUE表示买入信号
-generate_drop_signals <- function(data, lookbackDays, minDropPercent, includeCurrentBar = TRUE) {
+generate_drop_signals <- function(data,
+                                  lookbackDays,
+                                  minDropPercent,
+                                  includeCurrentBar = TRUE,
+                                  signalMode = c("absolute", "atr"),
+                                  atrLength = 14) {
+  signalMode <- match.arg(signalMode)
   n <- nrow(data)
 
   # WARN 关键修复：Pine Script的命名混淆
@@ -122,6 +159,16 @@ generate_drop_signals <- function(data, lookbackDays, minDropPercent, includeCur
   }
 
   # 向量化计算跌幅
+  if (identical(signalMode, "atr")) {
+    close_vec <- as.numeric(data[, "Close"])
+    tr_vec <- calc_true_range(high_vec, low_vec, close_vec)
+    atr_vec <- calc_atr_wilder(tr_vec, atrLength = atrLength)
+
+    drop_atr <- (window_high - low_vec) / atr_vec
+    signals <- !is.na(drop_atr) & !is.na(window_high) & is.finite(drop_atr) & (atr_vec > 0) & (drop_atr >= minDropPercent)
+    return(signals)
+  }
+
   drop_percent <- (window_high - low_vec) / window_high * 100
 
   # 生成信号
@@ -169,9 +216,12 @@ backtest_tradingview_aligned <- function(data,
                                         verbose = FALSE,
                                         logIgnoredSignals = TRUE,
                                         includeCurrentBar = TRUE,
-                                        exitMode = c("close", "tradingview")) {
+                                        exitMode = c("close", "tradingview"),
+                                        signalMode = c("absolute", "atr"),
+                                        atrLength = 14) {
 
   exitMode <- match.arg(exitMode)
+  signalMode <- match.arg(signalMode)
 
   # 开始计时
   start_time <- Sys.time()
@@ -198,7 +248,14 @@ backtest_tradingview_aligned <- function(data,
   }
 
   # ========== 生成信号 ==========
-  signals <- generate_drop_signals(data, lookbackDays, minDropPercent, includeCurrentBar = includeCurrentBar)
+  signals <- generate_drop_signals(
+    data,
+    lookbackDays,
+    minDropPercent,
+    includeCurrentBar = includeCurrentBar,
+    signalMode = signalMode,
+    atrLength = atrLength
+  )
   signalCount <- sum(signals, na.rm = TRUE)
 
   if (verbose) {
