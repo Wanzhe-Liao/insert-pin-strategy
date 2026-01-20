@@ -2,16 +2,16 @@
 
 - signalMode: `atr` (atrLength=14)
 - train/test: 12/1 months, windows=12
-- cumulative out-of-sample return: -2.43%
-- max drawdown (OS equity curve): -35.05%
-- avg monthly return: 0.41% (sd 11.37%), Sharpe~0.13
-- OS months: +6 / -6 / 0=0
+- cumulative out-of-sample return: -27.41%
+- max drawdown (OS equity curve): -39.14%
+- avg monthly return: -2.08% (sd 10.67%), Sharpe~-0.68
+- OS months: +7 / -5 / 0=0
 
 ## Parameter stability
 
-- lookback: mean=11.08 sd=6.01
-- dropATR:  mean=5.24 sd=0.91
-- TP%:     mean=1.63 sd=0.81
-- SL%:     mean=3.20 sd=1.38
+- lookback: mean=15.25 sd=6.14
+- dropATR:  mean=5.53 sd=1.42
+- TP%:     mean=3.33 sd=1.90
+- SL%:     mean=2.76 sd=1.64
 
 Details CSV: `walkforward_atr_symbols/XRPUSDT_15m_atr_wf_details.csv`

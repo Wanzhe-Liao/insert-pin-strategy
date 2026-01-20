@@ -10,23 +10,23 @@
 
 ### DOGEUSDT
 
-- 30m: OOS -4.56%, maxDD -39.76%, Sharpe 0.15, windows 12
-- 1h: OOS -31.51%, maxDD -32.80%, Sharpe -1.71, windows 12
-- 5m: OOS -39.00%, maxDD -5.54%, Sharpe -0.93, windows 9
-- 15m: OOS -69.27%, maxDD -69.55%, Sharpe -1.66, windows 12
+- 1h: OOS -41.60%, maxDD -46.76%, Sharpe -2.19, windows 12
+- 30m: OOS -52.72%, maxDD -55.66%, Sharpe -2.02, windows 12
+- 5m: OOS -62.30%, maxDD -39.40%, Sharpe -1.99, windows 9
+- 15m: OOS -77.66%, maxDD -76.53%, Sharpe -3.04, windows 12
 
 ### PEPEUSDT
 
-- 15m: OOS -21.47%, maxDD -70.12%, Sharpe 0.38, windows 12
-- 30m: OOS -29.54%, maxDD -54.41%, Sharpe -0.45, windows 12
-- 1h: OOS -31.22%, maxDD -43.58%, Sharpe -1.00, windows 12
-- 5m: OOS -47.73%, maxDD -42.55%, Sharpe -0.50, windows 9
+- 1h: OOS -22.31%, maxDD -38.97%, Sharpe -0.61, windows 12
+- 5m: OOS -32.71%, maxDD -24.58%, Sharpe -0.21, windows 9
+- 30m: OOS -56.33%, maxDD -65.93%, Sharpe -0.90, windows 12
+- 15m: OOS -86.11%, maxDD -86.39%, Sharpe -3.06, windows 12
 
 ### XRPUSDT
 
-- 30m: OOS 6.73%, maxDD -42.18%, Sharpe 0.36, windows 12
-- 15m: OOS -2.43%, maxDD -35.05%, Sharpe 0.13, windows 12
-- 5m: OOS -22.41%, maxDD -10.80%, Sharpe -0.23, windows 9
-- 1h: OOS -23.20%, maxDD -35.63%, Sharpe -0.75, windows 12
+- 30m: OOS -23.07%, maxDD -27.89%, Sharpe -1.43, windows 12
+- 15m: OOS -27.41%, maxDD -39.14%, Sharpe -0.68, windows 12
+- 1h: OOS -38.85%, maxDD -46.62%, Sharpe -1.64, windows 12
+- 5m: OOS -47.29%, maxDD -24.39%, Sharpe -0.83, windows 9
 
-Summary CSV: `docs/reports/multitimeframe_atr_walkforward_summary.csv`
+Summary CSV: `docs/reports/multitimeframe_atr_walkforward_summary_round1.csv`
