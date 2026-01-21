@@ -1,0 +1,49 @@
+//@version=5
+// =============================================================================
+// 策略名称：三日暴跌接针策略（ATR 标化 / TradingView 对齐版）
+// 对齐目标：R 引擎 `backtest_tradingview_aligned(..., signalMode="atr", exitMode="tradingview")`
+//
+// 说明：
+// - 信号：dropATR = (ta.highest(high, lookbackBars) - low) / ta.atr(atrLen)
+// - 入场：buySignal & 空仓 -> strategy.entry（process_orders_on_close=true）
+// - 出场：strategy.exit(limit/stop) 盘中以 High/Low 触发，按 TP/SL 精确价格成交（TV 默认模型更接近）
+// =============================================================================
+
+strategy("三日暴跌接针策略（ATR/TV对齐版）",
+  overlay=true,
+  process_orders_on_close=true,
+  pyramiding=0,
+  default_qty_type=strategy.percent_of_equity,
+  default_qty_value=100,
+  initial_capital=10000,
+  commission_type=strategy.commission.percent,
+  commission_value=0.075)  // 0.075% = 0.00075
+
+// === Inputs ===
+group_conditions = "条件设置"
+lookbackBars = input.int(10, title="回看K线数(Bar)", group=group_conditions, minval=1)
+atrLen = input.int(14, title="ATR长度", group=group_conditions, minval=1)
+minDropATR = input.float(4.0, title="最小下跌阈值(ATR倍数)", group=group_conditions, minval=0.0, step=0.05)
+
+group_risk = "风险管理"
+takeProfitPercent = input.float(6.0, title="止盈(%)", group=group_risk, minval=0.0, step=0.05)
+stopLossPercent = input.float(2.0, title="止损(%)", group=group_risk, minval=0.0, step=0.05)
+
+// === Signal (ATR-normalized) ===
+highestHigh = ta.highest(high, lookbackBars)  // 包含当前K线
+atr = ta.atr(atrLen)                          // Wilder ATR (RMA of TR)
+dropATR = (highestHigh - low) / atr
+buySignal = dropATR >= minDropATR
+
+// === Entry ===
+notInTrade = strategy.position_size == 0
+if (buySignal and notInTrade)
+    strategy.entry("做多", strategy.long)
+
+// === Exit (TradingView-like intrabar TP/SL fills) ===
+if (strategy.position_size > 0)
+    entryPrice = strategy.position_avg_price
+    takeProfitPrice = entryPrice * (1 + takeProfitPercent / 100)
+    stopLossPrice = entryPrice * (1 - stopLossPercent / 100)
+    strategy.exit("止盈/止损", from_entry="做多", limit=takeProfitPrice, stop=stopLossPrice)
+
