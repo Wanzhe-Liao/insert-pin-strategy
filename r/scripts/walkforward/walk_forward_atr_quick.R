@@ -23,6 +23,8 @@ suppressMessages({
   if (!require("RcppRoll", quietly = TRUE)) install.packages("RcppRoll")
   if (!require("foreach", quietly = TRUE)) install.packages("foreach")
   if (!require("doParallel", quietly = TRUE)) install.packages("doParallel")
+  if (!require("httr", quietly = TRUE)) install.packages("httr")
+  if (!require("jsonlite", quietly = TRUE)) install.packages("jsonlite")
 
   library(optparse)
   library(xts)
@@ -30,11 +32,17 @@ suppressMessages({
   library(RcppRoll)
   library(foreach)
   library(doParallel)
+  library(httr)
+  library(jsonlite)
 })
 
 option_list <- list(
   make_option(c("-d", "--dataset"), type = "character", default = "BTCUSDT_30m",
               help = "Dataset name (e.g., BTCUSDT_30m) [default: %default]"),
+  make_option(c("--update_binance_to"), type = "character", default = "",
+              help = "If set (e.g., 2026-01-01), download missing klines from Binance up to this UTC date (inclusive). [default: %default]"),
+  make_option(c("--binance_sleep"), type = "double", default = 0.15,
+              help = "Sleep seconds between Binance requests [default: %default]"),
   make_option(c("-t", "--train_months"), type = "integer", default = 12,
               help = "Training window size in months [default: %default]"),
   make_option(c("--test_months"), type = "integer", default = 1,
@@ -65,6 +73,8 @@ option_list <- list(
               help = "Max SL percent [default: %default]"),
   make_option(c("--atr_length"), type = "integer", default = 14,
               help = "ATR length for signalMode=\"atr\" [default: %default]"),
+  make_option(c("--exit_mode"), type = "character", default = "close",
+              help = "Exit mode: close or tradingview [default: %default]"),
   make_option(c("-s", "--seed"), type = "integer", default = 42,
               help = "Random seed [default: %default]"),
   make_option(c("-o", "--output_dir"), type = "character", default = "walkforward_atr",
@@ -74,6 +84,8 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list = option_list))
 
 dataset_name <- opt$dataset
+update_binance_to <- trimws(opt$update_binance_to)
+binance_sleep <- opt$binance_sleep
 train_months <- opt$train_months
 test_months <- opt$test_months
 last_windows <- opt$last_windows
@@ -89,6 +101,7 @@ tp_max <- opt$tp_max
 sl_min <- opt$sl_min
 sl_max <- opt$sl_max
 atr_length <- opt$atr_length
+exit_mode <- match.arg(tolower(opt$exit_mode), c("close", "tradingview"))
 seed <- opt$seed
 output_dir <- opt$output_dir
 
@@ -104,12 +117,154 @@ cat(sprintf("Samples: phase1=%d, phase2=%d | cores=%d | atrLength=%d\n\n",
 
 source("backtest_tradingview_aligned.R", encoding = "UTF-8")
 
+interval_to_binance <- function(tf) tf
+
+extract_symbol_tf <- function(dataset_name) {
+  parts <- strsplit(dataset_name, "_", fixed = TRUE)[[1]]
+  if (length(parts) < 2) stop("Invalid dataset name (expected SYMBOL_TF): ", dataset_name)
+  list(symbol = parts[[1]], timeframe = parts[[2]])
+}
+
+download_binance_klines_xts <- function(symbol, interval, start_date, end_date, sleep_secs = 0.15) {
+  # Prefer Binance "vision" endpoint (often more reachable than api.binance.com).
+  url <- "https://data-api.binance.vision/api/v3/klines"
+  limit <- 1000
+
+  # NOTE: milliseconds since epoch exceed 32-bit integer range; keep as numeric
+  # and send as character to the API.
+  start_ms <- as.numeric(as.POSIXct(start_date, tz = "UTC")) * 1000
+  end_ms <- as.numeric(as.POSIXct(end_date, tz = "UTC")) * 1000
+
+  parts <- list()
+  next_start <- start_ms
+
+  repeat {
+    resp <- NULL
+    for (attempt in 1:5) {
+      resp <- tryCatch(
+        GET(
+          url,
+          query = list(
+            symbol = symbol,
+            interval = interval,
+            startTime = sprintf("%.0f", next_start),
+            endTime = sprintf("%.0f", end_ms),
+            limit = limit
+          ),
+          user_agent("insert-pin-strategy/1.0"),
+          timeout(30)
+        ),
+        error = function(e) e
+      )
+
+      if (!inherits(resp, "error")) break
+      Sys.sleep(max(1, sleep_secs * attempt * 2))
+    }
+
+    if (inherits(resp, "error")) stop(resp)
+
+    if (status_code(resp) == 429) {
+      Sys.sleep(max(1, sleep_secs * 5))
+      next
+    }
+    stop_for_status(resp)
+
+    txt <- content(resp, as = "text", encoding = "UTF-8")
+    arr <- jsonlite::fromJSON(txt)
+    if (length(arr) == 0) break
+
+    dt <- as.data.table(arr)
+    parts[[length(parts) + 1]] <- dt
+
+    # closeTime is column 7 (ms). Continue from next ms.
+    last_close_ms <- as.numeric(dt[nrow(dt), 7])
+    next_start <- last_close_ms + 1
+    if (!is.finite(next_start) || next_start >= end_ms) break
+
+    Sys.sleep(sleep_secs)
+  }
+
+  if (length(parts) == 0) return(NULL)
+
+  all <- rbindlist(parts, fill = TRUE)
+  setnames(all, paste0("V", seq_len(ncol(all))))
+  all <- unique(all, by = "V1")
+  setorder(all, V1)
+
+  close_time <- as.numeric(all$V7) / 1000
+  idx <- as.POSIXct(close_time, origin = "1970-01-01", tz = "UTC")
+
+  x <- xts(
+    cbind(
+      Open = as.numeric(all$V2),
+      High = as.numeric(all$V3),
+      Low = as.numeric(all$V4),
+      Close = as.numeric(all$V5),
+      Volume = as.numeric(all$V6)
+    ),
+    order.by = idx
+  )
+
+  x
+}
+
 cat("Loading data/liaochu.RData ...\n")
 load("data/liaochu.RData")
 stopifnot(exists("cryptodata"))
 
 full_data <- cryptodata[[dataset_name]]
 stopifnot(!is.null(full_data))
+
+if (nzchar(update_binance_to)) {
+  ds <- extract_symbol_tf(dataset_name)
+  symbol <- ds$symbol
+  interval <- interval_to_binance(ds$timeframe)
+
+  date_str <- trimws(gsub("/", "-", update_binance_to, fixed = TRUE))
+  end_day <- as.Date(date_str)
+  if (is.na(end_day)) stop("Invalid --update_binance_to (expected date like 2026-01-01): ", update_binance_to)
+
+  end_date <- as.POSIXct(sprintf("%s 23:59:59.999", format(end_day, "%Y-%m-%d")), tz = "UTC")
+  last_ts <- max(index(full_data))
+
+  if (is.finite(last_ts) && last_ts < end_date) {
+    start_date <- as.POSIXct(last_ts, tz = "UTC") + 0.001
+    cat(sprintf("\nDownloading %s %s klines from Binance: %s -> %s\n",
+                symbol, interval,
+                format(start_date, "%Y-%m-%d %H:%M:%OS3"),
+                format(end_date, "%Y-%m-%d %H:%M:%OS3")))
+
+    new_x <- download_binance_klines_xts(
+      symbol = symbol,
+      interval = interval,
+      start_date = start_date,
+      end_date = end_date,
+      sleep_secs = binance_sleep
+    )
+
+    if (!is.null(new_x) && nrow(new_x) > 0) {
+      before_n <- nrow(full_data)
+      full_data <- rbind(full_data, new_x)
+      full_data <- full_data[!duplicated(index(full_data))]
+      full_data <- full_data[order(index(full_data))]
+      cat(sprintf("OK appended %d rows (total %d -> %d)\n\n",
+                  nrow(full_data) - before_n, before_n, nrow(full_data)))
+
+      cache_file <- file.path(
+        "data",
+        sprintf("%s_binance_until_%s.RData", dataset_name, gsub("-", "", date_str, fixed = TRUE))
+      )
+      updated_dataset <- full_data
+      save(updated_dataset, file = cache_file)
+      cat(sprintf("Saved updated dataset cache: %s\n\n", cache_file))
+    } else {
+      cat("WARN no new data downloaded (skip update)\n\n")
+    }
+  } else {
+    cat(sprintf("\nNo update needed: last=%s >= end=%s\n\n",
+                as.character(last_ts), format(end_date, "%Y-%m-%d %H:%M:%OS3")))
+  }
+}
 
 cat(sprintf("OK rows=%d | range=%s -> %s\n\n",
             nrow(full_data),
@@ -192,7 +347,7 @@ eval_params <- function(params_df, data) {
         verbose = FALSE,
         logIgnoredSignals = FALSE,
         includeCurrentBar = TRUE,
-        exitMode = "close",
+        exitMode = exit_mode,
         signalMode = "atr",
         atrLength = atr_length
       ),
@@ -361,7 +516,7 @@ for (w in windows) {
     verbose = FALSE,
     logIgnoredSignals = FALSE,
     includeCurrentBar = TRUE,
-    exitMode = "close",
+    exitMode = exit_mode,
     signalMode = "atr",
     atrLength = atr_length
   )
@@ -428,6 +583,7 @@ summary_md <- c(
   sprintf("# ATR Walk-Forward Summary — %s", dataset_name),
   "",
   sprintf("- signalMode: `atr` (atrLength=%d)", atr_length),
+  sprintf("- exitMode: `%s`", exit_mode),
   sprintf("- windows: %d (train=%d months, test=%d months, last_windows=%d)",
           nrow(results_df), train_months, test_months, last_windows),
   sprintf("- cumulative out-of-sample return: %.2f%%", cum_return_pct),
